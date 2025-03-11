@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8">
-    <title>Visualize wind data</title>
-    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <meta charset='utf-8' />
+    <title>mapbox wind</title>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.5.1/mapbox-gl.css" rel="stylesheet">
     <script src="https://api.mapbox.com/mapbox-gl-js/v3.5.1/mapbox-gl.js"></script>
     <style>
@@ -17,112 +17,345 @@
             top: 0;
             bottom: 0;
             width: 100%;
+            background: #202020;
         }
     </style>
 </head>
 <body>
-    <div id="map"></div>
-    <script>// TO MAKE THE MAP APPEAR YOU MUST
-        // ADD YOUR ACCESS TOKEN FROM
-        // https://account.mapbox.com
-        mapboxgl.accessToken = 'pk.eyJ1Ijoic29ucGR2ZmEiLCJhIjoiY2xha3JncXE3MDhoNDN1cGoxbGozNTZvdCJ9.Bab7ge7IUvqNO6-AAfMWCg';
+    <div id='map'></div>
+    <!--<script src="https://cdn.jsdelivr.net/npm/@sakitam-gis/mapbox-wind@1.0.0-alpha.10/dist/mapbox-wind.js"></script>-->
+    <script src="https://sakitam.oss-cn-beijing.aliyuncs.com/codepen/assets/script/mapbox-wind.js"></script>
+    <script src="https://unpkg.com/dat.gui@0.7.9/build/dat.gui.min.js"></script>
+    <script>mapboxgl.accessToken = 'pk.eyJ1IjoidmZhc29ucGQiLCJhIjoiY2tvbTl3NHFvMHU1YjJ3bzd4cnp0c2h2NSJ9.MXSJRTka-63tR-t8RK-Xag';
         const map = new mapboxgl.Map({
             container: 'map', // container ID
-            // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
-            minzoom:0,
-            maxZoom:4,
-            style: 'mapbox://styles/mapbox/dark-v11', // style URL
-            center: [-74.5, 40], // starting position
-            zoom: 9 // starting zoom
+            center: [139.68786, 35.68355],
+            zoom: 15.27,
+            pitch: 42,
+            bearing: -50,
+            style: 'mapbox://styles/mapbox/dark-v11',
+            minZoom: 10,
+            maxZoom: 16,
+            maxPitch: 80,
         });
 
-        // Add zoom and rotation controls to the map.
-        map.addControl(new mapboxgl.NavigationControl());
+        const color = {
+            wind: [
+                [0, [98, 113, 183, 255]],
+                [1, [57, 97, 159, 255]],
+                [3, [74, 148, 169, 255]],
+                [5, [77, 141, 123, 255]],
+                [7, [83, 165, 83, 255]],
+                [9, [53, 159, 53, 255]],
+                [11, [167, 157, 81, 255]],
+                [13, [159, 127, 58, 255]],
+                [15, [161, 108, 92, 255]],
+                [17, [129, 58, 78, 255]],
+                [19, [175, 80, 136, 255]],
+                [21, [117, 74, 147, 255]],
+                [24, [109, 97, 163, 255]],
+                [27, [68, 105, 141, 255]],
+                [29, [92, 144, 152, 255]],
+                [36, [125, 68, 165, 255]],
+                [46, [231, 215, 215, 255]],
+                [51, [219, 212, 135, 255]],
+                [77, [205, 202, 112, 255]],
+                [104, [128, 128, 128, 255]]
+            ],
+        };
 
-        map.on('load', () => {
-            map.addSource('raster-array-source', {
-                'type': 'raster-array',
-                // Replace this URL with a 'mapbox://TILESET_ID'
-                'url': 'mapbox://sonpdvfa.gfs-example2',
-                'tileSize': 512
-            });
-            map.addLayer({
-                'id': 'wind-layer',
-                'type': 'raster-particle',
-                'source': 'raster-array-source',
-                'source-layer': '10winds',
-                'paint': {
-                    'raster-particle-speed-factor': 0.4,
-                    'raster-particle-fade-opacity-factor': 0.9,
-                    'raster-particle-reset-rate-factor': 0.4,
-                    'raster-particle-count': 4000,
-                    'raster-particle-max-speed': 40,
-                    'raster-particle-color': [
-                        'interpolate',
-                        ['linear'],
-                        ['raster-particle-speed'],
-                        1.5,
-                        'rgba(134,163,171,256)',
-                        2.5,
-                        'rgba(126,152,188,256)',
-                        4.12,
-                        'rgba(110,143,208,256)',
-                        4.63,
-                        'rgba(110,143,208,256)',
-                        6.17,
-                        'rgba(15,147,167,256)',
-                        7.72,
-                        'rgba(15,147,167,256)',
-                        9.26,
-                        'rgba(57,163,57,256)',
-                        10.29,
-                        'rgba(57,163,57,256)',
-                        11.83,
-                        'rgba(194,134,62,256)',
-                        13.37,
-                        'rgba(194,134,63,256)',
-                        14.92,
-                        'rgba(200,66,13,256)',
-                        16.46,
-                        'rgba(200,66,13,256)',
-                        18.0,
-                        'rgba(210,0,50,256)',
-                        20.06,
-                        'rgba(215,0,50,256)',
-                        21.6,
-                        'rgba(175,80,136,256)',
-                        23.66,
-                        'rgba(175,80,136,256)',
-                        25.21,
-                        'rgba(117,74,147,256)',
-                        27.78,
-                        'rgba(117,74,147,256)',
-                        29.32,
-                        'rgba(68,105,141,256)',
-                        31.89,
-                        'rgba(68,105,141,256)',
-                        33.44,
-                        'rgba(194,251,119,256)',
-                        42.18,
-                        'rgba(194,251,119,256)',
-                        43.72,
-                        'rgba(241,255,109,256)',
-                        48.87,
-                        'rgba(241,255,109,256)',
-                        50.41,
-                        'rgba(256,256,256,256)',
-                        57.61,
-                        'rgba(256,256,256,256)',
-                        59.16,
-                        'rgba(0,256,256,256)',
-                        68.93,
-                        'rgba(0,256,256,256)',
-                        69.44,
-                        'rgba(256,37,256,256)'
-                    ]
-                }
-            });
+        map.on('load', function () {
+            fetch('https://sakitam.oss-cn-beijing.aliyuncs.com/codepen/assets/json/wind.json')
+                // fetch('./data/wind.json')
+                .then(res => res.json())
+                .then(data => {
+                    data = data.map((item, idx) => {
+                        item.header = Object.assign(item.header, {
+                            parameterCategory: 1,
+                            parameterNumber: idx === 0 ? 2 : 3,
+                        });
+                        return item;
+                    });
+
+                    map.addSource('vector-array-source', {
+                        "type": "vector",
+                        // Replace this URL with a 'mapbox://TILESET_ID'
+                        "tiles": [
+                            "https://indigo-lab.github.io/plateau-tokyo23ku-building-mvt-2020/{z}/{x}/{y}.pbf"
+                        ],
+                        "minzoom": 10,
+                        "maxzoom": 16,
+                    });
+
+
+                    map.addLayer({
+                        "id": "bldg",
+                        "type": "fill-extrusion",
+                        "source": "vector-array-source",
+                        "source-layer": "bldg",
+                        "minzoom": 10,
+                        "maxzoom": 20,
+                        "paint": {
+                            "fill-extrusion-color": [
+                                'case',
+                                ['boolean', ['feature-state', 'hover'], false],
+                                "#ff8c00", "#008000"
+                            ],
+                            "fill-extrusion-height": ["get", "measuredHeight"]
+                        }
+                    });
+
+                    const windInterpolateColor = color.wind.reduce((result, item, key) => result.concat(item[0], 'rgba(' + item[1].join(',') + ')'), []);
+
+                    const fillLayer1 = new mapboxWind.ScalarFill('wind1', {
+                        "type": "image",
+                        "url": "https://sakitam.oss-cn-beijing.aliyuncs.com/codepen/assets/image/uv.png",
+                        "extent": [
+                            [-180, 85.051129],
+                            [-180, -85.051129],
+                            [180, 85.051129],
+                            [180, -85.051129],
+                        ],
+                        "width": 1440,
+                        "height": 720,
+                        "uMin": -34.37186050415039,
+                        "uMax": 46.51813888549805,
+                        "vMin": -42.12305450439453,
+                        "vMax": 49.66694259643555,
+                    }, {
+                        wrapX: true,
+                        styleSpec: {
+                            'fill-color': [
+                                'interpolate',
+                                ['linear'],
+                                ['get', 'value'],
+                                ...windInterpolateColor
+                            ],
+                            'opacity': [
+                                'interpolate',
+                                ['exponential', 0.5],
+                                ['zoom'],
+                                0,
+                                1,
+                                10,
+                                0
+                            ],
+                        },
+                        renderForm: 'rg',
+                        // widthSegments: 720,
+                        // heightSegments: 360,
+                        widthSegments: 1,
+                        heightSegments: 1,
+                        displayRange: [0, 150],
+                        // mappingRange: [0, 500000],
+                        mappingRange: [0, 0],
+                        wireframe: false,
+                    });
+
+                    map.addLayer(fillLayer1);
+
+                    const fillLayer = new mapboxWind.ScalarFill('wind', {
+                        "type": "image",
+                        "url": "https://sakitam.oss-cn-beijing.aliyuncs.com/codepen/assets/image/uv.png",
+                        "extent": [
+                            [-180, 85.051129],
+                            [-180, -85.051129],
+                            [180, 85.051129],
+                            [180, -85.051129],
+                        ],
+                        "width": 1440,
+                        "height": 720,
+                        "uMin": -34.37186050415039,
+                        "uMax": 46.51813888549805,
+                        "vMin": -42.12305450439453,
+                        "vMax": 49.66694259643555,
+                    }, {
+                        wrapX: true,
+                        styleSpec: {
+                            'fill-color': [
+                                'interpolate',
+                                ['linear'],
+                                ['get', 'value'],
+                                ...windInterpolateColor
+                            ],
+                            'opacity': [
+                                'interpolate',
+                                ['exponential', 0.5],
+                                ['zoom'],
+                                1,
+                                0,
+                                10,
+                                1
+                            ],
+                        },
+                        renderForm: 'rg',
+                        // widthSegments: 720,
+                        // heightSegments: 360,
+                        widthSegments: 1,
+                        heightSegments: 1,
+                        displayRange: [0, 150],
+                        // mappingRange: [0, 500000],
+                        mappingRange: [0, 0],
+                        wireframe: false,
+                    });
+
+                    map.addLayer(fillLayer);
+
+                    const particlesConfig = {
+                        wrapX: true,
+                        speedFactor: 1,
+                        fadeOpacity: 0.93,
+                        dropRate: 0.003,
+                        dropRateBump: 0.002,
+                        lineWidth: 2.1,
+                        opacity: 1,
+                    }
+
+                    const particles = new mapboxWind.Particles('particles', {
+                        "type": "image",
+                        "url": "https://sakitam.oss-cn-beijing.aliyuncs.com/codepen/assets/image/uv-mc.png",
+                        "extent": [
+                            [-180, 85.051129],
+                            [-180, -85.051129],
+                            [180, 85.051129],
+                            [180, -85.051129],
+                        ],
+                        "width": 1024,
+                        "height": 1024,
+                        "uMin": -34.37186050415039,
+                        "uMax": 46.51813888549805,
+                        "vMin": -42.12305450439453,
+                        "vMax": 49.66694259643555,
+                    }, {
+                        wrapX: true,
+                        lineWidth: 2.2,
+                        styleSpec: {
+                            'color': [
+                                'interpolate',
+                                ['linear'],
+                                ['get', 'value'],
+                                0.0,
+                                '#fff',
+                                100.0,
+                                '#fff',
+                            ],
+                            'opacity': [
+                                'interpolate',
+                                ['exponential', 0.5],
+                                ['zoom'],
+                                1, // zoom
+                                1, // opacity
+                                5, // zoom
+                                0.8 // opacity
+                            ],
+                            'numParticles': [
+                                'interpolate',
+                                ['exponential', 0.5],
+                                ['zoom'],
+                                0, // zoom
+                                65535, // numParticles
+                                8, // zoom
+                                512 // numParticles
+                            ],
+                        },
+                    });
+
+                    map.addLayer(particles);
+
+                    const gui = new dat.GUI();
+
+                    gui.add({
+                        addParticles: true,
+                    }, 'addParticles').onChange(function (state) {
+                        if (state) {
+                            map.addLayer(particles);
+                        } else {
+                            map.removeLayer('particles');
+                        }
+                    });
+
+                    gui.add({
+                        addScalarFill: true,
+                    }, 'addScalarFill').onChange(function (state) {
+                        if (state) {
+                            if (map.getLayer('particles')) {
+                                map.addLayer(fillLayer, 'particles');
+                            } else {
+                                map.addLayer(fillLayer);
+                            }
+                        } else {
+                            map.removeLayer('wind');
+                        }
+                    });
+
+                    gui.add({
+                        colorful: false,
+                    }, 'colorful').onChange(function (state) {
+                        if (!state) {
+                            particles.updateOptions({
+                                styleSpec: {
+                                    color: [
+                                        'interpolate',
+                                        ['linear'],
+                                        ['get', 'value'],
+                                        0.0,
+                                        '#fff',
+                                        100.0,
+                                        '#fff',
+                                    ]
+                                },
+                            });
+                        } else {
+                            particles.updateOptions({
+                                styleSpec: {
+                                    'color': [
+                                        'interpolate',
+                                        ['linear'],
+                                        ['get', 'value'],
+                                        ...windInterpolateColor
+                                    ]
+                                },
+                            });
+                        }
+                    });
+
+                    gui.add({
+                        numParticles: 65535,
+                    }, 'numParticles', 0, 65535).onChange(function (num) {
+                        particles.updateOptions({
+                            styleSpec: {
+                                numParticles: num
+                            },
+                        });
+                    });
+
+                    gui.add(particlesConfig, 'speedFactor', 0, 2).onChange(function () {
+                        particles.updateOptions(particlesConfig);
+                    });
+
+                    gui.add(particlesConfig, 'fadeOpacity', 0, 1).onChange(function () {
+                        particles.updateOptions(particlesConfig);
+                    });
+
+                    gui.add(particlesConfig, 'dropRate', 0, 0.1).onChange(function () {
+                        particles.updateOptions(particlesConfig);
+                    });
+
+                    gui.add(particlesConfig, 'dropRateBump', 0, 0.1).onChange(function () {
+                        particles.updateOptions(particlesConfig);
+                    });
+
+                    gui.add(particlesConfig, 'lineWidth', 0, 10).onChange(function () {
+                        particles.updateOptions(particlesConfig);
+                    });
+
+                    gui.add(particlesConfig, 'wrapX').onChange(function () {
+                        particles.updateOptions(particlesConfig);
+                    });
+
+
+
+                });
         });</script>
-
 </body>
 </html>
