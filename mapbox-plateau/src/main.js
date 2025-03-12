@@ -1,24 +1,25 @@
-import './style.css'
 import javascriptLogo from './javascript.svg'
 import viteLogo from '/vite.svg'
 import { setupCounter } from './counter.js'
+import { setupPlateau, setupWind } from './map-visualizer.js';
 
-document.querySelector('#app').innerHTML = `
-  <div>
-    <a href="https://vite.dev" target="_blank">
-      <img src="${viteLogo}" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript" target="_blank">
-      <img src="${javascriptLogo}" class="logo vanilla" alt="JavaScript logo" />
-    </a>
-    <h1>Hello Vite!</h1>
-    <div class="card">
-      <button id="counter" type="button"></button>
-    </div>
-    <p class="read-the-docs">
-      Click on the Vite logo to learn more
-    </p>
-  </div>
-`
+if(!config) console.error("Config not set!");
+		
+mapboxgl.accessToken = config.accessToken;
 
-setupCounter(document.querySelector('#counter'))
+const map = new mapboxgl.Map({
+    container: 'map', // container ID
+    center: [139.68786, 35.68355],
+    zoom: 15.27,
+    pitch: 42,
+    bearing: -50,
+    style: 'mapbox://styles/mapbox/dark-v11',
+    minZoom: 10,
+    maxZoom: 16,
+    maxPitch: 80,
+}); 
+
+map.on('load', function () {
+  setupPlateau(map);
+  setupWind(map);
+});
