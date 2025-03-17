@@ -24,6 +24,6 @@ const map = new mapboxgl.Map({
 
 map.on('load', function () {
   setupPlateau(map);
-  //setupWind(map);
+  setupWind(map);
   setupFlightRoute(map);
 });

@@ -221,96 +221,96 @@ export function setupWind(map){
 
         map.addLayer(particles);
 
-        const gui = new dat.GUI();
+        //let gui = new dat.GUI();
 
-        gui.add({
-            addParticles: true,
-        }, 'addParticles').onChange(function (state) {
-            if (state) {
-                map.addLayer(particles);
-            } else {
-                map.removeLayer('particles');
-            }
-        });
+        //gui.add({
+        //    addParticles: true,
+        //}, 'addParticles').onChange(function (state) {
+        //    if (state) {
+        //        map.addLayer(particles);
+        //    } else {
+        //        map.removeLayer('particles');
+        //    }
+        //});
 
-        gui.add({
-            addScalarFill: true,
-        }, 'addScalarFill').onChange(function (state) {
-            if (state) {
-                if (map.getLayer('particles')) {
-                    map.addLayer(fillLayer, 'particles');
-                } else {
-                    map.addLayer(fillLayer);
-                }
-            } else {
-                map.removeLayer('wind');
-            }
-        });
+        //gui.add({
+        //    addScalarFill: true,
+        //}, 'addScalarFill').onChange(function (state) {
+        //    if (state) {
+        //        if (map.getLayer('particles')) {
+        //            map.addLayer(fillLayer, 'particles');
+        //        } else {
+        //            map.addLayer(fillLayer);
+        //        }
+        //    } else {
+        //        map.removeLayer('wind');
+        //    }
+        //});
 
-        gui.add({
-            colorful: false,
-        }, 'colorful').onChange(function (state) {
-            if (!state) {
-                particles.updateOptions({
-                    styleSpec: {
-                        color: [
-                            'interpolate',
-                            ['linear'],
-                            ['get', 'value'],
-                            0.0,
-                            '#fff',
-                            100.0,
-                            '#fff',
-                        ]
-                    },
-                });
-            } else {
-                particles.updateOptions({
-                    styleSpec: {
-                        'color': [
-                            'interpolate',
-                            ['linear'],
-                            ['get', 'value'],
-                            ...windInterpolateColor
-                        ]
-                    },
-                });
-            }
-        });
+        //gui.add({
+        //    colorful: false,
+        //}, 'colorful').onChange(function (state) {
+        //    if (!state) {
+        //        particles.updateOptions({
+        //            styleSpec: {
+        //                color: [
+        //                    'interpolate',
+        //                    ['linear'],
+        //                    ['get', 'value'],
+        //                    0.0,
+        //                    '#fff',
+        //                    100.0,
+        //                    '#fff',
+        //                ]
+        //            },
+        //        });
+        //    } else {
+        //        particles.updateOptions({
+        //            styleSpec: {
+        //                'color': [
+        //                    'interpolate',
+        //                    ['linear'],
+        //                    ['get', 'value'],
+        //                    ...windInterpolateColor
+        //                ]
+        //            },
+        //        });
+        //    }
+        //});
 
-        gui.add({
-            numParticles: 65535,
-        }, 'numParticles', 0, 65535).onChange(function (num) {
-            particles.updateOptions({
-                styleSpec: {
-                    numParticles: num
-                },
-            });
-        });
+        //gui.add({
+        //    numParticles: 65535,
+        //}, 'numParticles', 0, 65535).onChange(function (num) {
+        //    particles.updateOptions({
+        //        styleSpec: {
+        //            numParticles: num
+        //        },
+        //    });
+        //});
 
-        gui.add(particlesConfig, 'speedFactor', 0, 2).onChange(function () {
-            particles.updateOptions(particlesConfig);
-        });
+        //gui.add(particlesConfig, 'speedFactor', 0, 2).onChange(function () {
+        //    particles.updateOptions(particlesConfig);
+        //});
 
-        gui.add(particlesConfig, 'fadeOpacity', 0, 1).onChange(function () {
-            particles.updateOptions(particlesConfig);
-        });
+        //gui.add(particlesConfig, 'fadeOpacity', 0, 1).onChange(function () {
+        //    particles.updateOptions(particlesConfig);
+        //});
 
-        gui.add(particlesConfig, 'dropRate', 0, 0.1).onChange(function () {
-            particles.updateOptions(particlesConfig);
-        });
+        //gui.add(particlesConfig, 'dropRate', 0, 0.1).onChange(function () {
+        //    particles.updateOptions(particlesConfig);
+        //});
 
-        gui.add(particlesConfig, 'dropRateBump', 0, 0.1).onChange(function () {
-            particles.updateOptions(particlesConfig);
-        });
+        //gui.add(particlesConfig, 'dropRateBump', 0, 0.1).onChange(function () {
+        //    particles.updateOptions(particlesConfig);
+        //});
 
-        gui.add(particlesConfig, 'lineWidth', 0, 10).onChange(function () {
-            particles.updateOptions(particlesConfig);
-        });
+        //gui.add(particlesConfig, 'lineWidth', 0, 10).onChange(function () {
+        //    particles.updateOptions(particlesConfig);
+        //});
 
-        gui.add(particlesConfig, 'wrapX').onChange(function () {
-            particles.updateOptions(particlesConfig);
-        });
+        //gui.add(particlesConfig, 'wrapX').onChange(function () {
+        //    particles.updateOptions(particlesConfig);
+        //});
 
 
 
