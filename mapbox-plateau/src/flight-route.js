@@ -20,66 +20,114 @@ export function setupFlightRoute(map){
             );
 
             var options = {
-                obj: '../Soldier.glb',
+				obj: '../Soldier.glb',
                 type: 'gltf',
-                scale: 100,
+                scale: 50,
                 units: 'meters',
                 rotation: { x: 90, y: 0, z: 0 },
                 anchor: 'center'//default rotation
             }
 
-            var pointA = [139.68986, 35.68555];
-            var pointB = [139.68786, 35.67355];
-
-            var sphereA = tb.sphere({color: 'red', material: 'MeshToonMaterial', anchor: 'center'})
-                .setCoords(pointA);
-            sphereA.addEventListener('ObjectMouseOver', onObjectMouseClick, false);
-            tb.add(sphereA);
-
-            var sphereB = tb.sphere({color: 'green', material: 'MeshToonMaterial', anchor: 'center'})
-                .setCoords(pointB);
-            // sphereB.addEventListener('ObjectMouseOver', onObjectMouseClick, false);
-            tb.add(sphereB);
-
             tb.loadObj(options, function (model) {
                 drone = model.setCoords([139.68786, 35.68355]);
                 drone.castShadow = true;
-                // Listening to the events
-                // drone.addEventListener('SelectedChange', onSelectedChange, false);
-                // drone.addEventListener('Wireframed', onWireframed, false);
-                // drone.addEventListener('IsPlayingChanged', onIsPlayingChanged, false);
-                // drone.addEventListener('ObjectDragged', onDraggedObject, false);
-                // drone.addEventListener('ObjectMouseOver', onObjectMouseOver, false);
-                // drone.addEventListener('ObjectMouseOut', onObjectMouseOut, false);
-                // drone.addEventListener('ObjectChanged', onObjectChanged, false);
 
-                var options = {
-					animation: 1,
-					path: [pointA, pointB],
-					duration: 10000
+				tb.add(drone);
+
+				let line;
+
+				let flightPlan = {
+					"geometry": {
+						"coordinates": [
+							[
+								139.68986,
+								35.68555,
+								100
+							],
+							[
+								139.686073019972,
+								35.68391289628885, 
+								100  
+							],
+							[
+								139.67987868274898,
+								35.68291119456225, 
+								100 
+							],
+							[
+								139.67676744339641,
+								35.68532432976451,
+								100 
+							],
+							[
+								139.67878545309335,
+								35.68830673040096, 
+								100 
+							],
+							[
+								139.68094376521736,
+								35.689171857699876, 
+								100
+							],
+							[
+								139.68523219110548,
+								35.6926092889477, 
+								100
+							],
+							[
+								139.6901374121977,
+								35.68789688658442,
+								100
+							],
+							[
+								139.68986,
+								35.68555,
+								100
+							]
+						],
+						"type": "LineString"
+					},
+					"type": "Feature",
+					"properties": {}
 				}
 
-				// start the soldier animation with above options, and remove the line when animation ends
-				drone.followPath(
-					options,
-					function () {
-                        // done follow path
+				function fly(data) {
+					// extract path geometry from callback geojson, and set duration of travel
+					var options = {
+						path: data.geometry.coordinates,
+						duration: 20000
 					}
-				);
 
-				drone.playAnimation(options);
+					drone.followPath(
+						options,
+						function () {
+							// done follow path
+						}
+					);
 
-                tb.add(drone);
+					// set up geometry for a line to be added to map, lofting it up a bit for *style*
+					let lineGeometry = options.path;
+
+					// create and add line object
+					line = tb.line({
+						geometry: lineGeometry,
+						width: 5,
+						color: 'steelblue'
+					})
+
+					tb.add(line);
+
+				}
+
+				fly(flightPlan);
             });
+
         },
 
         render: function (gl, matrix) {
             tb.update();
         }
+
     });   
 
-    //actions to execute onObjectMouseOver
-    function onObjectMouseClick(e) {
-        console.log("ObjectMouseClick: " + e.detail.name);
-    }
 }

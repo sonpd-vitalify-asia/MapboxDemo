@@ -20,7 +20,7 @@ export function setupPlateau(map){
             "fill-extrusion-color": [
                 'case',
                 ['boolean', ['feature-state', 'hover'], false],
-                "#ff8c00", "#cccccc"
+                "#9e9e9e", "#b0b0b0"
             ],
             "fill-extrusion-height": ["get", "measuredHeight"]
         }

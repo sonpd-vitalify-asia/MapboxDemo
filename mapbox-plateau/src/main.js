@@ -16,7 +16,7 @@ const map = new mapboxgl.Map({
     zoom: 15.27,
     pitch: 42,
     bearing: -50,
-    style: 'mapbox://styles/mapbox/dark-v11',
+    style: 'mapbox://styles/mapbox/satellite-v9',
     minZoom: 10,
     maxZoom: 16,
     maxPitch: 80,
@@ -24,6 +24,6 @@ const map = new mapboxgl.Map({
 
 map.on('load', function () {
   setupPlateau(map);
-  setupWind(map);
+  //setupWind(map);
   setupFlightRoute(map);
 });
