@@ -145,37 +145,133 @@ export function setupFlightRoute(map){
 					tb.add(line);
 
 				}
+				
+				const centerLon = 139.68786;
+				const centerLat = 35.68355;
+				const centerAlt = 100; 
+
+				const gridSize = { width: 20, height: 20, depth: 5 }; 
+				const radius = 0.05; // radius arund center point
+
+				const centralWind = new THREE.Vector3(0.2, 0.1, 0.05);
+				const altStepInMetter = 50;
+
+				let windField = Array.from({ length: gridSize.width }, (_, x) =>
+					Array.from({ length: gridSize.height }, (_, y) =>
+						Array.from({ length: gridSize.depth }, (_, z) => {
+							let lon = centerLon + ((x - gridSize.width / 2) / gridSize.width) * radius * 2;
+							let lat = centerLat + ((y - gridSize.height / 2) / gridSize.height) * radius * 2;
+							let alt = centerAlt + (z - gridSize.depth / 2) * altStepInMetter;
+
+							let noise = new THREE.Vector3(
+								(Math.random() - 0.5) * 0.1,
+								(Math.random() - 0.5) * 0.1,
+								(Math.random() - 0.5) * 0.05
+							);
+
+							return {
+								position: [lon, lat, alt], 
+								wind: centralWind.clone().add(noise)
+							};
+						})
+					)
+				);
 
 				function drawCalculatedRoute(data) {
-
 					let coords = structuredClone(data.geometry.coordinates);
-			
-					var windStr = new THREE.Vector3(windConfig.windStrength / 100, windConfig.windStrength / 100, windConfig.windStrength / 100);
-					var wind = new THREE.Vector3(windConfig.direction.x, windConfig.direction.y, windConfig.direction.z).multiply(windStr);
 				
 					for (let i = 0; i < coords.length; i++) {
-
-						var coordsVector = new THREE.Vector3(coords[i][0], coords[i][1], 0);
-
-						var result = coordsVector.add(wind);
-
-						coords[i] = [result.x, result.y, 100];
+						let [lon, lat, alt] = coords[i];
+				
+						let nearestWind = getNearestWindVector(lon, lat, alt);
+				
+						let newLon = lon + nearestWind.x * windConfig.windStrength / 50;
+						let newLat = lat + nearestWind.y * windConfig.windStrength / 50;
+						let newAlt = alt + nearestWind.z * windConfig.windStrength / 50; 
+				
+						coords[i] = [newLon, newLat, newAlt];
 					}
-
-					if (line2 === undefined) {
-
-					} else {
+				
+					if (line2 !== undefined) {
 						tb.remove(line2);
 					}
-					// create and add line object
+				
 					line2 = tb.line({
 						geometry: coords,
 						width: 5,
-						color: 'red',
-					})
-
+						color: "red", 
+					});
+				
 					tb.add(line2);
 				}
+				
+
+				function getNearestWindVector(lon, lat, alt) {
+					let nearestWind = new THREE.Vector3(0, 0, 0);
+					let minDistance = Infinity;
+				
+					for (let x = 0; x < windField.length; x++) {
+						for (let y = 0; y < windField[x].length; y++) {
+							for (let z = 0; z < windField[x][y].length; z++) {
+								let data = windField[x][y][z];
+								let [wx, wy, wz] = data.position;
+				
+								let distance = Math.sqrt(
+									Math.pow(wx - lon, 2) +
+									Math.pow(wy - lat, 2) +
+									Math.pow(wz - alt, 2)
+								);
+				
+								if (distance < minDistance) {
+									minDistance = distance;
+									nearestWind = data.wind;
+								}
+							}
+						}
+					}
+				
+					return nearestWind;
+				}
+
+				function debugWindField(tb) {
+					let arrowGroup = [];
+				
+					for (let x = 0; x < windField.length; x++) {
+						for (let y = 0; y < windField[x].length; y++) {
+							for (let z = 0; z < windField[x][y].length; z++) {
+								let data = windField[x][y][z];
+								let windVector = data.wind; 
+								let start = data.position; 
+				
+								let end = [
+									start[0] + windVector.x * 0.01, 
+									start[1] + windVector.y * 0.01,
+									start[2] + windVector.z * 5
+								];
+				
+								let arrowLine = tb.line({
+									geometry: [start, end],
+									width: 2,
+									color: "blue",
+								});
+				
+								arrowGroup.push(arrowLine);
+								tb.add(arrowLine);
+				
+								let arrowHead = tb.sphere({
+									radius: 5, 
+									color: "red",
+									units: "meters",
+									anchor: 'center'
+								}).setCoords(end);;
+				
+								arrowGroup.push(arrowHead);
+								tb.add(arrowHead);
+							}
+						}
+					}
+				}
+				debugWindField(tb);
 
 				function init() {
 
@@ -190,6 +286,8 @@ export function setupFlightRoute(map){
 				drawWindDirection();
 				drawOriginalRoute(flightPlan);
 				drawCalculatedRoute(flightPlan);
+
+				debugWindField(tb);
             });
 
         },
