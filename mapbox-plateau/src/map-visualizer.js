@@ -212,9 +212,9 @@ export function setupWind(map){
                     ['exponential', 0.5],
                     ['zoom'],
                     0, // zoom
-                    65535, // numParticles
+                    0, // numParticles
                     8, // zoom
-                    512 // numParticles
+                    0 // numParticles
                 ],
             },
         });

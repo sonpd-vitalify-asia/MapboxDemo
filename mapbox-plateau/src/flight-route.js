@@ -46,49 +46,24 @@ export function setupFlightRoute(map){
 					"geometry": {
 						"coordinates": [
 							[
-								139.68986,
-								35.68555,
-								100
+								139.6870850942044,
+								35.68271466831231, 
+								240
 							],
 							[
-								139.686073019972,
-								35.68391289628885, 
-								100  
+								139.690901499203,
+								35.68510234388414, 
+								240  
 							],
 							[
-								139.67987868274898,
-								35.68291119456225, 
-								100 
+								139.6866881438094,
+								35.69385167099468, 
+								220
 							],
 							[
-								139.67676744339641,
-								35.68532432976451,
-								100 
-							],
-							[
-								139.67878545309335,
-								35.68830673040096, 
-								100 
-							],
-							[
-								139.68094376521736,
-								35.689171857699876, 
-								100
-							],
-							[
-								139.68523219110548,
-								35.6926092889477, 
-								100
-							],
-							[
-								139.6901374121977,
-								35.68789688658442,
-								100
-							],
-							[
-								139.68986,
-								35.68555,
-								100
+								139.6870850942044,
+								35.68271466831231,
+								240
 							]
 						],
 						"type": "LineString"
@@ -150,7 +125,7 @@ export function setupFlightRoute(map){
 				const centerLat = 35.68355;
 				const centerAlt = 100; 
 
-				const gridSize = { width: 20, height: 20, depth: 5 }; 
+				const gridSize = { width: 15, height: 15, depth: 5 }; 
 				const radius = 0.05; // radius arund center point
 
 				const centralWind = new THREE.Vector3(0.2, 0.1, 0.05);
@@ -249,29 +224,81 @@ export function setupFlightRoute(map){
 									start[2] + windVector.z * 5
 								];
 				
-								let arrowLine = tb.line({
-									geometry: [start, end],
-									width: 2,
-									color: "blue",
-								});
+								//let arrowLine = tb.line({
+								//	geometry: [start, end],
+								//	width: 2,
+								//	color: "blue",
+								//});
 				
-								arrowGroup.push(arrowLine);
-								tb.add(arrowLine);
+								//arrowGroup.push(arrowLine);
+								//tb.add(arrowLine);
 				
-								let arrowHead = tb.sphere({
-									radius: 5, 
-									color: "red",
-									units: "meters",
-									anchor: 'center'
-								}).setCoords(end);;
+								//let arrowHead = tb.sphere({
+								//	radius: 5, 
+								//	color: "red",
+								//	units: "meters",
+								//	anchor: 'center'
+								//}).setCoords(end);;
 				
-								arrowGroup.push(arrowHead);
-								tb.add(arrowHead);
+								//arrowGroup.push(arrowHead);
+								//tb.add(arrowHead);
+
+								var startCoord = new THREE.Vector3(start[0], start[1], start[2]);
+
+								var endCoord = new THREE.Vector3(end[0], end[1], end[2]);
+
+								var direction = startCoord.clone().sub(endCoord);
+
+								var segmentCount = 5;
+
+								var lastPosition = startCoord.clone();
+
+								for (let i = 1; i < segmentCount; i++) {
+
+									var segment = new THREE.Vector3(direction.x * i / segmentCount, direction.y * i / segmentCount, direction.z * i / segmentCount);
+									var position = startCoord.clone().add(segment);
+
+
+									var point2 = [lastPosition.x, lastPosition.y, lastPosition.z];
+									var point1 = [position.x, position.y, position.z];
+
+									var length = 0.00025;
+
+									var D = [point1[0] - point2[0], point1[1] - point2[1]];
+									var Norm = Math.sqrt(D[0] * D[0] + D[1] * D[1]);
+									var uD = [D[0] / Norm, D[1] / Norm];
+
+									var ax = uD[0] * Math.sqrt(3) / 2 - uD[1] * 1 / 2;
+									var ay = uD[0] * 1 / 2 + uD[1] * Math.sqrt(3) / 2;
+
+									var bx = uD[0] * Math.sqrt(3) / 2 + uD[1] * 1 / 2;
+									var by = - uD[0] * 1 / 2 + uD[1] * Math.sqrt(3) / 2;
+
+									let wing1Position = [point2[0] + length * ax, point2[1] + length * ay, point2[2]];
+									let wing2Position = [point2[0] + length * bx, point2[1] + length * by, point2[2]];
+
+									let wing1 = tb.line({
+										geometry: [point2, wing1Position],
+										width: 3,
+										color: "blue",
+									});
+
+
+									let wing2 = tb.line({
+										geometry: [point2, wing2Position],
+										width: 3,
+										color: "blue",
+									});
+
+									tb.add(wing1);
+									tb.add(wing2);
+
+									lastPosition = position.clone();
+								} 
 							}
 						}
 					}
 				}
-				debugWindField(tb);
 
 				function init() {
 
