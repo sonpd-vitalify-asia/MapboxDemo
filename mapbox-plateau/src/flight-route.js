@@ -320,11 +320,11 @@ export function setupFlightRoute(map) {
 				}
 
 				init();
+
 				drawWindDirection();
 				drawOriginalRoute(flightPlan);
 				drawCalculatedRoute(flightPlan);
-
-				//debugWindField(tb);
+				debugWindField(tb);
 
 				drawRing();
 				animate();
