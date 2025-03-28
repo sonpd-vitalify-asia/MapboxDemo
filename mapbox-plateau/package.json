@@ -12,6 +12,7 @@
     "vite": "^6.2.0"
   },
   "dependencies": {
+    "@tweenjs/tween.js": "^25.0.0",
     "threebox-plugin": "^2.2.7"
   }
 }

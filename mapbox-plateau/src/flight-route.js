@@ -1,5 +1,9 @@
-export function setupFlightRoute(map){
-    let drone;
+import TWEEN from '@tweenjs/tween.js'
+
+export function setupFlightRoute(map) {
+	let drone;
+	let ring;
+	let clock;
     map.addLayer({
         id: 'flight-route-layer',
         type: 'custom',
@@ -20,18 +24,22 @@ export function setupFlightRoute(map){
             );
 
             var options = {
-				obj: '../Soldier.glb',
+				obj: '../drone.glb',
                 type: 'gltf',
                 scale: 50,
                 units: 'meters',
-                rotation: { x: 90, y: 0, z: 0 },
-                anchor: 'center'//default rotation
+				rotation: { x: 90, y: 0, z: 0 },
+				adjustment: { x: 0, y: 0, z: -1.5 },
+				anchor: 'center'//default rotation
 			}
 
 			let windConfig = {
 				windStrength: 0.05,
 				windDirection: new THREE.Vector3(0, 0, 0),
+				routeProgress: 0,
 			}
+
+			clock = new THREE.Clock();
 
             tb.loadObj(options, function (model) {
                 drone = model.setCoords([139.68786, 35.68355]);
@@ -41,6 +49,8 @@ export function setupFlightRoute(map){
 
 				let line;
 				let line2;
+				let calculatedPath;
+				let path;
 
 				let flightPlan = {
 					"geometry": {
@@ -58,7 +68,7 @@ export function setupFlightRoute(map){
 							[
 								139.6866881438094,
 								35.69385167099468, 
-								220
+								240
 							],
 							[
 								139.6870850942044,
@@ -72,24 +82,27 @@ export function setupFlightRoute(map){
 					"properties": {}
 				}
 
+				let points = [];
+				let threeMaterial;
+
 				function drawWindDirection() {
 
 					var pointA = [139.69068762354476, 35.683589708868226];
 					var pointB = [139.69404922417496, 35.67866108711135];
 
-					var sphereA = tb.sphere({ color: 'red', material: 'MeshToonMaterial', anchor: 'center' })
+					var sphereA = tb.sphere({ color: 'red', material: threeMaterial, anchor: 'center' })
 						.setCoords(pointA);
-					tb.add(sphereA);
+					//tb.add(sphereA);
 
 					var sphereB = tb.sphere({ color: 'green', material: 'MeshToonMaterial', anchor: 'center' })
 						.setCoords(pointB);
-					tb.add(sphereB);
+					//tb.add(sphereB);
 
 					var a = new THREE.Vector3(pointA[0], pointA[1], 0);
 					var b = new THREE.Vector3(pointB[0], pointB[1], 0);
 					var direction = a.clone().sub(b).normalize();
 
-					windConfig.direction = direction; 
+					windConfig.direction = direction;
 				}
 
 				function drawOriginalRoute(data) {
@@ -98,13 +111,6 @@ export function setupFlightRoute(map){
 						path: data.geometry.coordinates,
 						duration: 20000
 					}
-
-					//drone.followPath(
-					//	options,
-					//	function () {
-					//		// done follow path
-					//	}
-					//);
 
 					// set up geometry for a line to be added to map, lofting it up a bit for *style*
 					let lineGeometry = options.path;
@@ -153,10 +159,10 @@ export function setupFlightRoute(map){
 				);
 
 				function drawCalculatedRoute(data) {
-					let coords = structuredClone(data.geometry.coordinates);
+					calculatedPath = structuredClone(data.geometry.coordinates);
 				
-					for (let i = 0; i < coords.length; i++) {
-						let [lon, lat, alt] = coords[i];
+					for (let i = 0; i < calculatedPath.length; i++) {
+						let [lon, lat, alt] = calculatedPath[i];
 				
 						let nearestWind = getNearestWindVector(lon, lat, alt);
 				
@@ -164,7 +170,7 @@ export function setupFlightRoute(map){
 						let newLat = lat + nearestWind.y * windConfig.windStrength / 50;
 						let newAlt = alt + nearestWind.z * windConfig.windStrength / 50; 
 				
-						coords[i] = [newLon, newLat, newAlt];
+						calculatedPath[i] = [newLon, newLat, newAlt];
 					}
 				
 					if (line2 !== undefined) {
@@ -172,12 +178,27 @@ export function setupFlightRoute(map){
 					}
 				
 					line2 = tb.line({
-						geometry: coords,
+						geometry: calculatedPath,
 						width: 5,
 						color: "red", 
 					});
 				
 					tb.add(line2);
+
+					points = [];
+
+					for (var i = 1; i < calculatedPath.length; i++) {
+						var lastCoord = calculatedPath[i - 1];
+						var currentCoord = calculatedPath[i];
+						var step = 0.025;
+
+						for (var progress = 0; progress < 1; progress += step) {
+							var point = intermediatePointTo(lastCoord[1], lastCoord[0], currentCoord[1], currentCoord[0], progress);
+							point[2] = currentCoord[2];
+
+							points.push(point);
+						}
+					}
 				}
 				
 
@@ -224,24 +245,6 @@ export function setupFlightRoute(map){
 									start[2] + windVector.z * 5
 								];
 				
-								//let arrowLine = tb.line({
-								//	geometry: [start, end],
-								//	width: 2,
-								//	color: "blue",
-								//});
-				
-								//arrowGroup.push(arrowLine);
-								//tb.add(arrowLine);
-				
-								//let arrowHead = tb.sphere({
-								//	radius: 5, 
-								//	color: "red",
-								//	units: "meters",
-								//	anchor: 'center'
-								//}).setCoords(end);;
-				
-								//arrowGroup.push(arrowHead);
-								//tb.add(arrowHead);
 
 								var startCoord = new THREE.Vector3(start[0], start[1], start[2]);
 
@@ -306,6 +309,13 @@ export function setupFlightRoute(map){
 					gui.add(windConfig, 'windStrength', 0, 0.08).onChange(function () {
 
 						drawCalculatedRoute(flightPlan);
+						drawProgress(windConfig.routeProgress);
+
+					});
+
+					gui.add(windConfig, 'routeProgress', 0, 100).onChange(function () {
+
+						drawProgress(windConfig.routeProgress);
 					});
 				}
 
@@ -314,7 +324,152 @@ export function setupFlightRoute(map){
 				drawOriginalRoute(flightPlan);
 				drawCalculatedRoute(flightPlan);
 
-				debugWindField(tb);
+				//debugWindField(tb);
+
+				drawRing();
+				animate();
+
+				var pulseRate = 1;
+				var timeCount = pulseRate;
+				var blink = true;
+				var tween;
+
+				function animate(time) {
+					requestAnimationFrame(animate);
+
+					if (ring.coordinates !== drone.coordinates) {
+						ring.setCoords(drone.coordinates);
+					}
+
+					timeCount += clock.getDelta();
+
+					if (timeCount > pulseRate) {
+
+						blink = !blink;
+
+						if (blink) {
+							tween = new TWEEN.Tween(threeMaterial.color).to({ r: 0, g: 1, b: 0 }, pulseRate * 1000).start();
+						}
+						else {
+							tween = new TWEEN.Tween(threeMaterial.color).to({ r: 0, g: 0, b: 0 }, pulseRate * 1000).start();
+						}
+						timeCount = 0;
+					}
+
+					if (tween) tween.update(time);
+				}
+
+
+				function drawProgress(fraction)
+				{
+					var index = clamp(Math.round((points.length * fraction) / 100), 0, points.length - 1);
+
+					var remainingPath = points.slice(index, (points.length - 1));
+
+					var duration = (20000 * remainingPath.length) / points.length;
+
+					if (path !== undefined) path.stop();
+
+					drone.setCoords(points[index]);
+
+					var options = {
+						path: remainingPath,
+						duration: duration
+					}
+
+					path = drone.followPath(
+						options,
+						function () {
+							path.stop();
+						}
+					);
+				}
+
+				function drawRing() {
+
+					threeMaterial = tb.material({
+						material: new THREE.MeshStandardMaterial({ color: '#adfc03' }),
+					});
+
+					var geometry = new THREE.TorusGeometry(40, 3, 9, 18);
+					ring = new THREE.Mesh(geometry, threeMaterial);
+					ring = tb.Object3D({ obj: ring, units: 'meters', adjustment: { x: 0, y: 0, z: 1 }, anchor: 'center' });
+					ring.setCoords(drone.coordinates);
+					tb.add(ring);
+				}
+
+
+				function clamp(num, min, max) {
+					return num <= min
+						? min
+						: num >= max
+							? max
+							: num
+				}
+
+				function intermediatePointTo(thisLat, thisLon, pointLat, pointLon, fraction)
+				{
+					var phi1 = toRadians(thisLat);
+
+					var ramda1 = toRadians(thisLon);
+
+					var phi2 = toRadians(pointLat);
+
+					var ramda2 = toRadians(pointLon);
+
+					var sinTheta1 = Math.sin(phi1);
+
+					var cosTheta1 = Math.cos(phi1);
+
+					var sinRamda1 = Math.sin(ramda1);
+
+					var cosRamda1 = Math.cos(ramda1);
+
+					var sinPhi2 = Math.sin(phi2);
+
+					var cosPhi2 = Math.cos(phi2);
+
+					var sinRamda2 = Math.sin(ramda2);
+
+					var cosRamda2 = Math.cos(ramda2);
+
+					var deltaPhi = phi2 - phi1;
+
+					var deltaRamda = ramda2 - ramda1;
+
+					var a = Math.sin(deltaPhi / 2.0) * Math.sin(deltaPhi / 2.0) + Math.cos(phi1) *
+
+						Math.cos(phi2) * Math.sin(deltaRamda / 2.0) * Math.sin(deltaRamda / 2.0);
+
+					var delta = 2.0 * Math.atan2(Math.sqrt(a), Math.sqrt(1.0 - a));
+
+					var A = Math.sin((1.0 - fraction) * delta) / Math.sin(delta);
+
+					var B = Math.sin(fraction * delta) / Math.sin(delta);
+
+
+					var x = A * cosTheta1 * cosRamda1 + B * cosPhi2 * cosRamda2;
+
+					var y = A * cosTheta1 * sinRamda1 + B * cosPhi2 * sinRamda2;
+
+					var z = A * sinTheta1 + B * sinPhi2;
+
+					var theta3 = Math.atan2(z, Math.sqrt(x * x + y * y));
+
+					var ramda3 = Math.atan2(y, x);
+
+					var result = [(toDegrees(ramda3) + 540.0) % 360.0 - 180.0, toDegrees(theta3)];
+
+					return result; // normalise lon to −180..+180°
+				}
+
+				function toRadians(degree) {
+					return degree * Math.PI / 180.0;
+				}
+
+				function toDegrees(radian) {
+					return radian * 180.0 / Math.PI;
+				}
             });
 
         },
