@@ -325,6 +325,7 @@ export function setupFlightRoute(map) {
 				drawOriginalRoute(flightPlan);
 				drawCalculatedRoute(flightPlan);
 				debugWindField(tb);
+				drawProgress(0);
 
 				drawRing();
 				animate();
