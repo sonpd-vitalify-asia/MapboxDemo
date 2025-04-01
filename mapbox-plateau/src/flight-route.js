@@ -307,7 +307,7 @@ export function setupFlightRoute(map) {
 					}
 				}
 
-				function init() {
+				function initGUI() {
 
 					let gui = new dat.GUI();
 					gui.add(windConfig, 'windStrength', 0, 0.08).onChange(function () {
@@ -362,7 +362,12 @@ export function setupFlightRoute(map) {
 				let progress = 0;
 				const increment = 0.001; // Adjust for desired speed
 
-				init();
+				let mixer = new THREE.AnimationMixer();
+				let animations = drone.animations;
+				let action = mixer.clipAction(animations[0], model);
+				action.play();
+
+				initGUI();
 
 				drawWindDirection();
 				drawOriginalRoute(flightPlan);
@@ -383,6 +388,8 @@ export function setupFlightRoute(map) {
 
 				function animate(time) {
 					requestAnimationFrame(animate);
+
+					mixer.update(1 / 60);
 
 					if (ring.coordinates !== drone.coordinates) {
 						ring.setCoords(drone.coordinates);
