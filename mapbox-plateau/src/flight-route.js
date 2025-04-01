@@ -1,9 +1,12 @@
-import TWEEN from '@tweenjs/tween.js'
+import { Tween, Group, Easing } from '@tweenjs/tween.js'
 
 export function setupFlightRoute(map) {
 	let drone;
 	let ring;
 	let clock;
+	let timeStats;
+	let keepTrackTime = false;
+
     map.addLayer({
         id: 'flight-route-layer',
         type: 'custom',
@@ -30,20 +33,22 @@ export function setupFlightRoute(map) {
                 units: 'meters',
 				rotation: { x: 90, y: 0, z: 0 },
 				adjustment: { x: 0, y: 0, z: -1.5 },
-				anchor: 'center'//default rotation
+				anchor: 'center',
 			}
 
 			let windConfig = {
 				windStrength: 0.05,
 				windDirection: new THREE.Vector3(0, 0, 0),
 				routeProgress: 0,
+				time: 0,
 			}
 
 			clock = new THREE.Clock();
 
-            tb.loadObj(options, function (model) {
-                drone = model.setCoords([139.68786, 35.68355]);
-                drone.castShadow = true;
+			tb.loadObj(options, function (model) {
+
+				drone = model.setCoords([139.69068762354476, 35.683589708868226]);
+				drone.castShadow = true;
 
 				tb.add(drone);
 
@@ -57,17 +62,17 @@ export function setupFlightRoute(map) {
 						"coordinates": [
 							[
 								139.6870850942044,
-								35.68271466831231, 
+								35.68271466831231,
 								240
 							],
 							[
 								139.690901499203,
-								35.68510234388414, 
-								240  
+								35.68510234388414,
+								240
 							],
 							[
 								139.6866881438094,
-								35.69385167099468, 
+								35.69385167099468,
 								240
 							],
 							[
@@ -109,7 +114,6 @@ export function setupFlightRoute(map) {
 					// extract path geometry from callback geojson, and set duration of travel
 					var options = {
 						path: data.geometry.coordinates,
-						duration: 20000
 					}
 
 					// set up geometry for a line to be added to map, lofting it up a bit for *style*
@@ -126,12 +130,12 @@ export function setupFlightRoute(map) {
 					tb.add(line);
 
 				}
-				
+
 				const centerLon = 139.68786;
 				const centerLat = 35.68355;
-				const centerAlt = 100; 
+				const centerAlt = 100;
 
-				const gridSize = { width: 15, height: 15, depth: 5 }; 
+				const gridSize = { width: 15, height: 15, depth: 5 };
 				const radius = 0.05; // radius arund center point
 
 				const centralWind = new THREE.Vector3(0.2, 0.1, 0.05);
@@ -151,7 +155,7 @@ export function setupFlightRoute(map) {
 							);
 
 							return {
-								position: [lon, lat, alt], 
+								position: [lon, lat, alt],
 								wind: centralWind.clone().add(noise)
 							};
 						})
@@ -160,29 +164,29 @@ export function setupFlightRoute(map) {
 
 				function drawCalculatedRoute(data) {
 					calculatedPath = structuredClone(data.geometry.coordinates);
-				
+
 					for (let i = 0; i < calculatedPath.length; i++) {
 						let [lon, lat, alt] = calculatedPath[i];
-				
+
 						let nearestWind = getNearestWindVector(lon, lat, alt);
-				
+
 						let newLon = lon + nearestWind.x * windConfig.windStrength / 50;
 						let newLat = lat + nearestWind.y * windConfig.windStrength / 50;
-						let newAlt = alt + nearestWind.z * windConfig.windStrength / 50; 
-				
+						let newAlt = alt + nearestWind.z * windConfig.windStrength / 50;
+
 						calculatedPath[i] = [newLon, newLat, newAlt];
 					}
-				
+
 					if (line2 !== undefined) {
 						tb.remove(line2);
 					}
-				
+
 					line2 = tb.line({
 						geometry: calculatedPath,
 						width: 5,
-						color: "red", 
+						color: "red",
 					});
-				
+
 					tb.add(line2);
 
 					points = [];
@@ -190,7 +194,7 @@ export function setupFlightRoute(map) {
 					for (var i = 1; i < calculatedPath.length; i++) {
 						var lastCoord = calculatedPath[i - 1];
 						var currentCoord = calculatedPath[i];
-						var step = 0.025;
+						var step = 0.005;
 
 						for (var progress = 0; progress < 1; progress += step) {
 							var point = intermediatePointTo(lastCoord[1], lastCoord[0], currentCoord[1], currentCoord[0], progress);
@@ -200,24 +204,24 @@ export function setupFlightRoute(map) {
 						}
 					}
 				}
-				
+
 
 				function getNearestWindVector(lon, lat, alt) {
 					let nearestWind = new THREE.Vector3(0, 0, 0);
 					let minDistance = Infinity;
-				
+
 					for (let x = 0; x < windField.length; x++) {
 						for (let y = 0; y < windField[x].length; y++) {
 							for (let z = 0; z < windField[x][y].length; z++) {
 								let data = windField[x][y][z];
 								let [wx, wy, wz] = data.position;
-				
+
 								let distance = Math.sqrt(
 									Math.pow(wx - lon, 2) +
 									Math.pow(wy - lat, 2) +
 									Math.pow(wz - alt, 2)
 								);
-				
+
 								if (distance < minDistance) {
 									minDistance = distance;
 									nearestWind = data.wind;
@@ -225,26 +229,26 @@ export function setupFlightRoute(map) {
 							}
 						}
 					}
-				
+
 					return nearestWind;
 				}
 
 				function debugWindField(tb) {
 					let arrowGroup = [];
-				
+
 					for (let x = 0; x < windField.length; x++) {
 						for (let y = 0; y < windField[x].length; y++) {
 							for (let z = 0; z < windField[x][y].length; z++) {
 								let data = windField[x][y][z];
-								let windVector = data.wind; 
-								let start = data.position; 
-				
+								let windVector = data.wind;
+								let start = data.position;
+
 								let end = [
-									start[0] + windVector.x * 0.01, 
+									start[0] + windVector.x * 0.01,
 									start[1] + windVector.y * 0.01,
 									start[2] + windVector.z * 5
 								];
-				
+
 
 								var startCoord = new THREE.Vector3(start[0], start[1], start[2]);
 
@@ -297,7 +301,7 @@ export function setupFlightRoute(map) {
 									tb.add(wing2);
 
 									lastPosition = position.clone();
-								} 
+								}
 							}
 						}
 					}
@@ -313,11 +317,50 @@ export function setupFlightRoute(map) {
 
 					});
 
-					gui.add(windConfig, 'routeProgress', 0, 100).onChange(function () {
+					gui.add(windConfig, 'routeProgress', 0, 1).onChange(function () {
 
-						drawProgress(windConfig.routeProgress);
+						drawProgress(windConfig.routeProgress,true);
+
 					});
+
+					var perfFolder = gui.addFolder('Performance');
+
+					timeStats = document.createElement('li');
+					timeStats.classList.add('gui-stats');
+
+					timeStats.innerHTML = '<i>Time: </i> ' + windConfig.time;
+
+					var trackObj = {
+						Track: function () {
+							keepTrackTime = true;
+							drawProgress(windConfig.routeProgress);
+						}
+					};
+					gui.add(trackObj, 'Track');
+
+					var stopObj = {
+						Stop: function () {
+							keepTrackTime = false;
+						}
+					};
+					gui.add(stopObj, 'Stop');
+
+					var resetObj = {
+						Reset: function () {
+							windConfig.time = 0;
+							timeStats.innerHTML = '<i>Time: </i> ' + formatSeconds(windConfig.time);
+						}
+					};
+					gui.add(resetObj, 'Reset');
+
+					perfFolder.domElement.appendChild(timeStats);
+					perfFolder.open();
 				}
+
+				const group = new Group();
+				let curve;
+				let progress = 0;
+				const increment = 0.001; // Adjust for desired speed
 
 				init();
 
@@ -325,7 +368,6 @@ export function setupFlightRoute(map) {
 				drawOriginalRoute(flightPlan);
 				drawCalculatedRoute(flightPlan);
 				debugWindField(tb);
-				drawProgress(0);
 
 				drawRing();
 				animate();
@@ -335,6 +377,10 @@ export function setupFlightRoute(map) {
 				var blink = true;
 				var tween;
 
+				windConfig.routeProgress = 0;
+				drone = model.setCoords(points[0]);
+				console.log("total points: " + points.length);
+
 				function animate(time) {
 					requestAnimationFrame(animate);
 
@@ -342,48 +388,100 @@ export function setupFlightRoute(map) {
 						ring.setCoords(drone.coordinates);
 					}
 
-					timeCount += clock.getDelta();
+					var delta = clock.getDelta();
+
+					timeCount += delta;
 
 					if (timeCount > pulseRate) {
 
 						blink = !blink;
 
 						if (blink) {
-							tween = new TWEEN.Tween(threeMaterial.color).to({ r: 0, g: 1, b: 0 }, pulseRate * 1000).start();
+							tween = new Tween(threeMaterial.color).to({ r: 0, g: 1, b: 0 }, pulseRate * 1000).start();
 						}
 						else {
-							tween = new TWEEN.Tween(threeMaterial.color).to({ r: 0, g: 0, b: 0 }, pulseRate * 1000).start();
+							tween = new Tween(threeMaterial.color).to({ r: 0, g: 0, b: 0 }, pulseRate * 1000).start();
 						}
 						timeCount = 0;
 					}
+				
 
 					if (tween) tween.update(time);
+
+					if (keepTrackTime) {
+
+						windConfig.time += delta;
+						timeStats.innerHTML = '<i>Time: </i> ' + formatSeconds(windConfig.time);
+
+						if (curve) {
+							windConfig.routeProgress += increment;
+							if (windConfig.routeProgress > 1) {
+								windConfig.routeProgress = 0; // Or reset to 0, or loop to the beginning
+							}
+
+							const point = curve.getPointAt(windConfig.routeProgress);
+
+							// Use 'point' to position your object
+							var p = tb.unprojectFromWorld(point);
+
+							drone.setCoords(p);
+
+							// Imported code from Threebox source, for drone rotation
+							let tangent = curve
+								.getTangentAt(windConfig.routeProgress)
+								.normalize();
+
+							let axis = new THREE.Vector3(0, 0, 0);
+							let up = new THREE.Vector3(0, 1, 0);
+
+							axis
+								.crossVectors(up, tangent)
+								.normalize();
+
+							let radians = Math.acos(up.dot(tangent));
+
+							let objectState = { worldCoordinates: point };
+
+							objectState.quaternion = [axis, radians];
+
+							drone._setObject(objectState);
+						}
+					}
+					else {
+						drone.setCoords(drone.coordinates);
+                    }
 				}
 
+				function formatSeconds(seconds) {
+					var date = new Date(1970, 0, 1);
+					date.setSeconds(seconds);
+					return date.toTimeString().replace(/.*(\d{2}:\d{2}:\d{2}).*/, "$1");
+				}
 
-				function drawProgress(fraction)
+				function drawProgress(setPosition)
 				{
-					var index = clamp(Math.round((points.length * fraction) / 100), 0, points.length - 1);
-
-					var remainingPath = points.slice(index, (points.length - 1));
-
-					var duration = (20000 * remainingPath.length) / points.length;
-
-					if (path !== undefined) path.stop();
-
-					drone.setCoords(points[index]);
-
 					var options = {
-						path: remainingPath,
-						duration: duration
+						path: points,
+						duration: 20000
 					}
 
 					path = drone.followPath(
 						options,
 						function () {
-							path.stop();
+
 						}
 					);
+
+					curve = path.animationQueue[0].parameters.pathCurve;
+
+					if (setPosition) {
+						const point = curve.getPointAt(windConfig.routeProgress);
+
+						// Use 'point' to position your object
+						var p = tb.unprojectFromWorld(point);
+
+						drone.setCoords(p);
+					}
 				}
 
 				function drawRing() {
@@ -476,9 +574,11 @@ export function setupFlightRoute(map) {
         },
 
         render: function (gl, matrix) {
-            tb.update();
+			tb.update();
         }
 
-    });   
+
+	});
+
 
 }
