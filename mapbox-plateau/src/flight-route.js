@@ -7,30 +7,27 @@ export function setupFlightRoute(map) {
 	let timeStats;
 	let keepTrackTime = false;
 
-    map.addLayer({
-        id: 'flight-route-layer',
-        type: 'custom',
-        renderingMode: '3d',
-        onAdd: function (map, mbxContext) {
+	window.tb = new Threebox(
+		map,
+		map.getCanvas().getContext('webgl'),
+		{
+			defaultLights: true,
+			enableSelectingObjects: true, //change this to false to disable 3D objects selection
+			enableTooltips: true,
+		}
+	);
 
-            window.tb = new Threebox(
-                map,
-                mbxContext,
-                {
-                    defaultLights: true,
-                    enableSelectingFeatures: true,
-                    enableSelectingObjects: true,
-                    enableDraggingObjects: true,
-                    enableRotatingObjects: true,
-                    enableTooltips: true
-                }
-            );
+	map.addLayer({
+		id: 'flight-route-layer',
+		type: 'custom',
+		renderingMode: '3d',
+		onAdd: function (map, mbxContext) {
 
-            var options = {
+			let options = {
 				obj: '../drone.glb',
-                type: 'gltf',
-                scale: 50,
-                units: 'meters',
+				type: 'gltf',
+				scale: 5,
+				units: 'meters',
 				rotation: { x: 90, y: 0, z: 0 },
 				adjustment: { x: 0, y: 0, z: -1.5 },
 				anchor: 'center',
@@ -41,6 +38,7 @@ export function setupFlightRoute(map) {
 				windDirection: new THREE.Vector3(0, 0, 0),
 				routeProgress: 0,
 				time: 0,
+				pan: false,
 			}
 
 			clock = new THREE.Clock();
@@ -48,7 +46,8 @@ export function setupFlightRoute(map) {
 			tb.loadObj(options, function (model) {
 
 				drone = model.setCoords([139.69068762354476, 35.683589708868226]);
-				drone.castShadow = true;
+
+				drone.fixedZoom = 15;
 
 				tb.add(drone);
 
@@ -56,6 +55,8 @@ export function setupFlightRoute(map) {
 				let line2;
 				let calculatedPath;
 				let path;
+				let points = [];
+				let threeMaterial;
 
 				let flightPlan = {
 					"geometry": {
@@ -87,28 +88,6 @@ export function setupFlightRoute(map) {
 					"properties": {}
 				}
 
-				let points = [];
-				let threeMaterial;
-
-				function drawWindDirection() {
-
-					var pointA = [139.69068762354476, 35.683589708868226];
-					var pointB = [139.69404922417496, 35.67866108711135];
-
-					var sphereA = tb.sphere({ color: 'red', material: threeMaterial, anchor: 'center' })
-						.setCoords(pointA);
-					//tb.add(sphereA);
-
-					var sphereB = tb.sphere({ color: 'green', material: 'MeshToonMaterial', anchor: 'center' })
-						.setCoords(pointB);
-					//tb.add(sphereB);
-
-					var a = new THREE.Vector3(pointA[0], pointA[1], 0);
-					var b = new THREE.Vector3(pointB[0], pointB[1], 0);
-					var direction = a.clone().sub(b).normalize();
-
-					windConfig.direction = direction;
-				}
 
 				function drawOriginalRoute(data) {
 					// extract path geometry from callback geojson, and set duration of travel
@@ -128,7 +107,6 @@ export function setupFlightRoute(map) {
 					})
 
 					tb.add(line);
-
 				}
 
 				const centerLon = 139.68786;
@@ -204,7 +182,6 @@ export function setupFlightRoute(map) {
 						}
 					}
 				}
-
 
 				function getNearestWindVector(lon, lat, alt) {
 					let nearestWind = new THREE.Vector3(0, 0, 0);
@@ -310,17 +287,18 @@ export function setupFlightRoute(map) {
 				function initGUI() {
 
 					let gui = new dat.GUI();
-					gui.add(windConfig, 'windStrength', 0, 0.08).onChange(function () {
 
+					gui.add(windConfig, 'windStrength', 0, 0.08).name('Wind Strength').onChange(function () {
 						drawCalculatedRoute(flightPlan);
 						drawProgress(windConfig.routeProgress);
-
 					});
 
-					gui.add(windConfig, 'routeProgress', 0, 1).onChange(function () {
+					gui.add(windConfig, 'routeProgress', 0, 1).name('Route Progress').onChange(function () {
+						drawProgress(windConfig.routeProgress, true);
+					});
 
-						drawProgress(windConfig.routeProgress,true);
-
+					gui.add(windConfig, 'pan').name('Camera Follow Drone').onChange(function () {
+						
 					});
 
 					var perfFolder = gui.addFolder('Performance');
@@ -357,6 +335,7 @@ export function setupFlightRoute(map) {
 					perfFolder.open();
 				}
 
+
 				const group = new Group();
 				let curve;
 				let progress = 0;
@@ -369,10 +348,9 @@ export function setupFlightRoute(map) {
 
 				initGUI();
 
-				drawWindDirection();
 				drawOriginalRoute(flightPlan);
 				drawCalculatedRoute(flightPlan);
-				debugWindField(tb);
+				//debugWindField(tb);
 
 				drawRing();
 				animate();
@@ -387,6 +365,7 @@ export function setupFlightRoute(map) {
 				console.log("total points: " + points.length);
 
 				function animate(time) {
+
 					requestAnimationFrame(animate);
 
 					mixer.update(1 / 60);
@@ -411,7 +390,7 @@ export function setupFlightRoute(map) {
 						}
 						timeCount = 0;
 					}
-				
+
 
 					if (tween) tween.update(time);
 
@@ -456,6 +435,11 @@ export function setupFlightRoute(map) {
 					}
 					else {
 						drone.setCoords(drone.coordinates);
+					}
+
+					//Panning
+					if (windConfig.pan) {
+						map.panTo(drone.coordinates);
                     }
 				}
 
@@ -465,8 +449,7 @@ export function setupFlightRoute(map) {
 					return date.toTimeString().replace(/.*(\d{2}:\d{2}:\d{2}).*/, "$1");
 				}
 
-				function drawProgress(setPosition)
-				{
+				function drawProgress(setPosition) {
 					var options = {
 						path: points,
 						duration: 20000
@@ -497,7 +480,7 @@ export function setupFlightRoute(map) {
 						material: new THREE.MeshStandardMaterial({ color: '#adfc03' }),
 					});
 
-					var geometry = new THREE.TorusGeometry(40, 3, 9, 18);
+					var geometry = new THREE.TorusGeometry(90, 5, 9, 18);
 					ring = new THREE.Mesh(geometry, threeMaterial);
 					ring = tb.Object3D({ obj: ring, units: 'meters', adjustment: { x: 0, y: 0, z: 1 }, anchor: 'center' });
 					ring.setCoords(drone.coordinates);
@@ -513,8 +496,7 @@ export function setupFlightRoute(map) {
 							: num
 				}
 
-				function intermediatePointTo(thisLat, thisLon, pointLat, pointLon, fraction)
-				{
+				function intermediatePointTo(thisLat, thisLon, pointLat, pointLon, fraction) {
 					var phi1 = toRadians(thisLat);
 
 					var ramda1 = toRadians(thisLon);
@@ -576,13 +558,14 @@ export function setupFlightRoute(map) {
 				function toDegrees(radian) {
 					return radian * 180.0 / Math.PI;
 				}
-            });
 
-        },
+			})
 
-        render: function (gl, matrix) {
+		},
+
+		render: function (gl, matrix) {
 			tb.update();
-        }
+		}
 
 
 	});

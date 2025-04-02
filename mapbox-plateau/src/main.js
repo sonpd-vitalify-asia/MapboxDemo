@@ -4,7 +4,7 @@ import { setupCounter } from './counter.js'
 import { setupPlateau, setupWind } from './map-visualizer.js';
 import { setupFlightRoute } from './flight-route.js';
 
-const VITE_MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;		
+const VITE_MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 mapboxgl.accessToken = VITE_MAPBOX_TOKEN;
 
 const origin = [139.68786, 35.68355];
@@ -21,8 +21,8 @@ const map = new mapboxgl.Map({
     maxPitch: 80,
 }); 
 
-map.on('load', function () {
+map.on('style.load', function () {
   setupPlateau(map);
-  setupWind(map);
+  //setupWind(map);
   setupFlightRoute(map);
 });
