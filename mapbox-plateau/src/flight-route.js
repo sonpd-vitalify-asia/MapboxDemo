@@ -113,7 +113,7 @@ export function setupFlightRoute(map) {
 				const centerLat = 35.68355;
 				const centerAlt = 100;
 
-				const gridSize = { width: 15, height: 15, depth: 5 };
+				const gridSize = { width: 15, height: 15, depth: 2 };
 				const radius = 0.05; // radius arund center point
 
 				const centralWind = new THREE.Vector3(0.2, 0.1, 0.05);
@@ -277,7 +277,39 @@ export function setupFlightRoute(map) {
 									tb.add(wing1);
 									tb.add(wing2);
 
+									var scalar = 2;
+
+									var midpoint1 = [(point2[0] + wing1Position[0]) / 2, (point2[1] + wing1Position[1]) / 2, (point2[2] + wing1Position[2]) / 2];
+									var midpoint2 = [(point2[0] + wing2Position[0]) / 2, (point2[1] + wing2Position[1]) / 2, (point2[2] + wing2Position[2]) / 2];
+
+									var wing1dir = [midpoint1[0] - direction.x * scalar, midpoint1[1] - direction.y * scalar, midpoint1[2] - direction.z * scalar];
+									var wing2dir = [midpoint2[0] - direction.x * scalar, midpoint2[1] - direction.y * scalar, midpoint2[2] - direction.z * scalar];
+
+									var target1Position = tb.projectToWorld(wing1dir);
+									var target2Position = tb.projectToWorld(wing2dir);
+
+									var t1 = new Tween(wing1.position).to(target1Position, 4000).easing(Easing.Quadratic.Out).repeat(Infinity)
+										.onUpdate(function () {
+											wing1.material.opacity -= 1 / 90;
+										})
+										.onRepeat(function () {
+											wing1.material.opacity = 1;
+										}).start();
+
+									var t2 = new Tween(wing2.position).to(target2Position, 4000).easing(Easing.Quadratic.Out).repeat(Infinity)
+										.onUpdate(function () {
+											wing2.material.opacity -= 1 / 90;
+										})
+										.onRepeat(function () {
+											wing2.material.opacity = 1;
+										}).start();
+
+									group.add(t1);
+									group.add(t2);
+
 									lastPosition = position.clone();
+
+									//console.log(wing1);
 								}
 							}
 						}
@@ -350,7 +382,7 @@ export function setupFlightRoute(map) {
 
 				drawOriginalRoute(flightPlan);
 				drawCalculatedRoute(flightPlan);
-				//debugWindField(tb);
+				debugWindField(tb);
 
 				drawRing();
 				animate();
@@ -393,6 +425,8 @@ export function setupFlightRoute(map) {
 
 
 					if (tween) tween.update(time);
+
+					group.update(time);
 
 					if (keepTrackTime) {
 
